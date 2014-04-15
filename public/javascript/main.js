@@ -25,6 +25,7 @@
     display_msg({m:"Share this url with your friend to join this chat: "+ document.location.origin+"/#"+fb_chat_room_id,c:"red"})
 
     // set up variables to access firebase data structure
+    var fb_video_list = fb_instance.child("videolist");
     var fb_new_chat_room = fb_instance.child('chatrooms').child(fb_chat_room_id);
     var fb_instance_users = fb_new_chat_room.child('users');
     var fb_instance_stream = fb_new_chat_room.child('stream');
@@ -51,7 +52,8 @@
       if (event.which == 13) {
         var emotion = get_emotion($(this).val());
         if(emotion){
-          fb_instance_stream.push({m:username+": " +$(this).val(), v:cur_video_blob, c: my_color, e: emotion});
+          message = fb_instance_stream.push({m:username+": " +$(this).val(), v:cur_video_blob, c: my_color, e: emotion});
+          fb_video_list.child(emotion).push({room_id: fb_chat_room_id, message_id: message.name()});
         }else{
           fb_instance_stream.push({m:username+": " +$(this).val(), c: my_color});
         }
@@ -66,34 +68,54 @@
 
   // creates a message node and appends it to the conversation
   function display_msg(data){
+    console.log(data);
     $("#conversation").append("<div class='msg' style='color:"+data.c+"'>"+data.m+"</div>");
     if(data.v){
-      // // for video element
-      // var video = document.createElement("video");
-      // video.autoplay = true;
-      // video.controls = false; // optional
-      // video.loop = true;
-      // video.width = 120;
+      var fb_connection = new Firebase("https://amber-fire-5565.firebaseio.com/");
+      console.log(data.e);
+      fb_connection.child("videolist").child(data.e).once('value', function(dataSnap){
+        var fb_emotion_videos=dataSnap;
 
-      // var source = document.createElement("source");
-      // source.src =  URL.createObjectURL(base64_to_blob(data.v));
-      // source.type =  "video/webm";
+        // console.log(fb_emotion_videos);
+        var rand = Math.random();
+        var num_children = fb_emotion_videos.numChildren();
+        var incr = 1.0/num_children;
+        var threshold = incr;
+        fb_emotion_videos.forEach(function(childSnap) {
+          var val = childSnap.val();
+          // console.log("val:" + val);
+          if (rand<threshold) {
+            var newVideo = fb_connection.child("chatrooms").child(val.room_id).child("stream").child(val.message_id);
+            newVideo.once('value', function(videoSnap){
+              // console.log(videoSnap.val());
+              // for video element
+              var video = document.createElement("video");
+              video.autoplay = true;
+              video.controls = false; // optional
+              video.loop = true;
+              video.width = 120;
 
-      // video.appendChild(source);
+              var source = document.createElement("source");
+              source.src =  URL.createObjectURL(base64_to_blob(videoSnap.val().v));
+              source.type =  "video/webm";
 
-      // for gif instead, use this code below and change mediaRecorder.mimeType in onMediaSuccess below
-      var video = document.createElement("img");
-      video.src = URL.createObjectURL(base64_to_blob(data.v));
-      video.width = 120;
+              video.appendChild(source);
 
-      // div action for filters
-      var videoDiv = document.createElement("span");
-      videoDiv.className += data.e;
-      videoDiv.appendChild(video);
+              // div action for filters
+              var videoDiv = document.createElement("span");
+              videoDiv.appendChild(video);
 
-      document.getElementById("videobox").appendChild(videoDiv);
-      var $videobox = $("#videobox");
-      $videobox.parent().append($videobox);
+              document.getElementById("conversation").appendChild(videoDiv);
+            });
+            return true;
+          }
+          else {
+            threshold += incr;
+          }
+        });
+        
+      });
+      
     }
   }
 
@@ -141,8 +163,8 @@
       var mediaRecorder = new MediaStreamRecorder(stream);
       var index = 1;
 
-      // mediaRecorder.mimeType = 'video/webm';
-      mediaRecorder.mimeType = 'image/gif';
+      mediaRecorder.mimeType = 'video/webm';
+      // mediaRecorder.mimeType = 'image/gif';
       // make recorded media smaller to save some traffic (80 * 60 pixels, 3*24 frames)
       mediaRecorder.video_width = video_width/2;
       mediaRecorder.video_height = video_height/2;
