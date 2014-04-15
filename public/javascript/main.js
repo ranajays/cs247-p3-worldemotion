@@ -49,8 +49,9 @@
     // bind submission box
     $("#submission input").keydown(function( event ) {
       if (event.which == 13) {
-        if(has_emotions($(this).val())){
-          fb_instance_stream.push({m:username+": " +$(this).val(), v:cur_video_blob, c: my_color});
+        var emotion = get_emotion($(this).val());
+        if(emotion){
+          fb_instance_stream.push({m:username+": " +$(this).val(), v:cur_video_blob, c: my_color, e: emotion});
         }else{
           fb_instance_stream.push({m:username+": " +$(this).val(), c: my_color});
         }
@@ -67,24 +68,27 @@
   function display_msg(data){
     $("#conversation").append("<div class='msg' style='color:"+data.c+"'>"+data.m+"</div>");
     if(data.v){
-      // for video element
-      var video = document.createElement("video");
-      video.autoplay = true;
-      video.controls = false; // optional
-      video.loop = true;
-      video.width = 120;
+      // // for video element
+      // var video = document.createElement("video");
+      // video.autoplay = true;
+      // video.controls = false; // optional
+      // video.loop = true;
+      // video.width = 120;
 
-      var source = document.createElement("source");
-      source.src =  URL.createObjectURL(base64_to_blob(data.v));
-      source.type =  "video/webm";
+      // var source = document.createElement("source");
+      // source.src =  URL.createObjectURL(base64_to_blob(data.v));
+      // source.type =  "video/webm";
 
-      video.appendChild(source);
+      // video.appendChild(source);
 
       // for gif instead, use this code below and change mediaRecorder.mimeType in onMediaSuccess below
-      // var video = document.createElement("img");
-      // video.src = URL.createObjectURL(base64_to_blob(data.v));
+      var video = document.createElement("img");
+      video.src = URL.createObjectURL(base64_to_blob(data.v));
+      video.width = 120;
 
-      document.getElementById("conversation").appendChild(video);
+      document.getElementById("videobox").appendChild(video);
+      var $videobox = $("#videobox");
+      $videobox.parent().append($videobox);
     }
   }
 
@@ -132,8 +136,8 @@
       var mediaRecorder = new MediaStreamRecorder(stream);
       var index = 1;
 
-      mediaRecorder.mimeType = 'video/webm';
-      // mediaRecorder.mimeType = 'image/gif';
+      // mediaRecorder.mimeType = 'video/webm';
+      mediaRecorder.mimeType = 'image/gif';
       // make recorded media smaller to save some traffic (80 * 60 pixels, 3*24 frames)
       mediaRecorder.video_width = video_width/2;
       mediaRecorder.video_height = video_height/2;
@@ -164,14 +168,15 @@
   }
 
   // check to see if a message qualifies to be replaced with video.
-  var has_emotions = function(msg){
+  var get_emotion = function(msg){
     var options = ["lol",":)",":("];
+    var emotions = ["lol", "happy", "sad"];
     for(var i=0;i<options.length;i++){
       if(msg.indexOf(options[i])!= -1){
-        return true;
+        return emotions[i];
       }
     }
-    return false;
+    return null;
   }
 
 
