@@ -53,3 +53,17 @@ a {
   text-align: center;
   padding: 50px 0;
 }
+#videobox {
+  overflow: auto;
+}
+.lol {
+  -webkit-filter: invert(0.8);
+  filter: invert(0.8);
+}
+.saturate {
+  -webkit-filter: saturate(4);
+  filter: saturate(4);
+}
+.sad {
+  -webkit-filter: sepia(100%);
+}

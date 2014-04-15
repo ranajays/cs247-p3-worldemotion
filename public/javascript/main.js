@@ -86,7 +86,12 @@
       video.src = URL.createObjectURL(base64_to_blob(data.v));
       video.width = 120;
 
-      document.getElementById("videobox").appendChild(video);
+      // div action for filters
+      var videoDiv = document.createElement("span");
+      videoDiv.className += data.e;
+      videoDiv.appendChild(video);
+
+      document.getElementById("videobox").appendChild(videoDiv);
       var $videobox = $("#videobox");
       $videobox.parent().append($videobox);
     }
